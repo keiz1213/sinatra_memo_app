@@ -1,0 +1,18 @@
+    <form action="/memos/new" method="post">
+      <div class="form-item">
+        <label for="form-item_label">title </label>
+        <input type="text" name="title" class="form-item_text">
+      </div>
+      <div class="form-item">
+        <label for="form-item_label">content </label>
+        <textarea class="form-item_textarea" name="content"></textarea>
+      </div>
+    <div class="form_container">
+      <form>
+        <input type="submit" value="Memo" class="form-item_submit">
+      </form>
+      <form action="/" method="get" class="form-item_submit-back">
+        <input type="submit" value="Back">
+      </form>
+    </div>
+    </form>

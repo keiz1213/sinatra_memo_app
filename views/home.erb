@@ -1,0 +1,11 @@
+<% if @memos %>
+  <% @memos.each do |memo| %>
+    <ul>
+      <li><a href="/memos/<%= memo["id"] %>" class="memo_link"><%= memo["title"] %></a></li>
+    </ul>
+  <% end %>
+<% end %>
+<form action="memos/new" method="get" class="form-item_submit">
+  <input type="submit" value="New memo">
+</form>
+
