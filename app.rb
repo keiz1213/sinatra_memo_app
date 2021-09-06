@@ -6,21 +6,16 @@ require 'erb'
 require 'json'
 require 'cgi/escape'
 
-def escape_params(params)
-  params['title'] = CGI.escapeHTML(params['title'])
-  params['content'] = CGI.escapeHTML(params['content'])
-end
-
 get '/' do
   @title = 'My Memo'
-  File.open('db/memos.json') do |file|
-    @memos = if file.size.zero?
-               []
-             else
-               JSON.parse(file.read)
-             end
+  begin
+    @memos = File.open('db/memos.json') { |file| JSON.parse(file.read) }
+  rescue StandardError
+    File.open('db/memos.json', 'w') do |file|
+      file.puts('[]')
+    end
+    @memos = File.open('db/memos.json') { |file| JSON.parse(file.read) }
   end
-
   erb :home
 end
 
@@ -30,28 +25,16 @@ get '/memos/new' do
 end
 
 post '/memos/new' do
-  escape_params(params)
-  ary = []
-  ids = []
   File.open('db/memos.json', 'r+') do |file|
-    if file.size.zero?
-      params['id'] = 1
-      ary << params
-      file.puts(JSON.generate(ary))
-    else
-      memos = JSON.parse(file.read)
-      if memos == []
-        params['id'] = 1
-      else
-        memos.each do |memo|
-          ids << memo['id']
-        end
-        params['id'] = ids.max + 1
-      end
-      memos << params
-      File.open('db/memos.json', 'w') do |f|
-        f.puts(JSON.generate(memos))
-      end
+    memos = JSON.parse(file.read)
+    params['id'] = if memos == []
+                     1
+                   else
+                     memos.map { |memo| memo['id'] }.max + 1
+                   end
+    memos << params
+    File.open('db/memos.json', 'w') do |f|
+      f.puts(JSON.generate(memos))
     end
   end
   redirect to('/')
@@ -60,12 +43,9 @@ end
 get '/memos/:id' do |id|
   @id = id.to_i
   memos = File.open('db/memos.json') { |file| JSON.parse(file.read) }
-  memos.each do |memo|
-    if memo['id'] == @id
-      @memo_title = (memo['title']).to_s
-      @memo_content = (memo['content']).to_s
-    end
-  end
+  memo = memos.filter { |m| m['id'] == @id }
+  @memo_title = (memo[0]['title'])
+  @memo_content = (memo[0]['content'])
   @title = @memo_title
   erb :memos
 end
@@ -84,12 +64,9 @@ end
 get '/memos/:id/edit' do |id|
   @id = id.to_i
   memos = File.open('db/memos.json') { |file| JSON.parse(file.read) }
-  memos.each do |memo|
-    if memo['id'] == @id
-      @memo_title = (memo['title']).to_s
-      @memo_content = (memo['content']).to_s
-    end
-  end
+  memo = memos.filter { |m| m['id'] == @id }
+  @memo_title = (memo[0]['title'])
+  @memo_content = (memo[0]['content'])
   @title = @memo_title
   erb :edit
 end
@@ -97,13 +74,9 @@ end
 patch '/memos/:id' do |id|
   @id = id.to_i
   memos = File.open('db/memos.json') { |file| JSON.parse(file.read) }
-  memos.each do |memo|
-    next unless memo['id'] == @id
-
-    escape_params(params)
-    memo['title'] = params['title']
-    memo['content'] = params['content']
-  end
+  memo = memos.filter { |m| m['id'] == @id }
+  memo[0]['title'] = params['title']
+  memo[0]['content'] = params['content']
   File.open('db/memos.json', 'w') { |file| file.puts(JSON.generate(memos)) }
   redirect to('/')
 end
