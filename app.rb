@@ -8,7 +8,7 @@ require 'cgi/escape'
 
 def find_memo(id)
   memos = File.open('db/memos.json') { |file| JSON.parse(file.read) }
-  memos.filter { |m| m['id'] == id }
+  memos.find { |m| m['id'] == id }
 end
 
 def delete_memo(id)
@@ -21,13 +21,13 @@ end
 
 def edit_memo(id)
   memos = File.open('db/memos.json') { |file| JSON.parse(file.read) }
-  memo = memos.filter { |m| m['id'] == id }
-  memo[0]['title'] = params['title']
-  memo[0]['content'] = params['content']
+  memo = memos.find { |m| m['id'] == id }
+  memo['title'] = params['title']
+  memo['content'] = params['content']
   File.open('db/memos.json', 'w') { |file| file.puts(JSON.generate(memos)) }
 end
 
-File.open('db/memos.json', 'w') do |file|
+File.open('db/memos.json', 'r+') do |file|
   file.puts('[]') if file.size.zero?
 end
 
@@ -61,8 +61,8 @@ end
 get '/memos/:id' do |id|
   @id = id.to_i
   memo = find_memo(@id)
-  @memo_title = (memo[0]['title'])
-  @memo_content = (memo[0]['content'])
+  @memo_title = (memo['title'])
+  @memo_content = (memo['content'])
   @title = @memo_title
   erb :memos
 end
@@ -77,8 +77,8 @@ end
 get '/memos/:id/edit' do |id|
   @id = id.to_i
   memo = find_memo(@id)
-  @memo_title = (memo[0]['title'])
-  @memo_content = (memo[0]['content'])
+  @memo_title = (memo['title'])
+  @memo_content = (memo['content'])
   @title = @memo_title
   erb :edit
 end
