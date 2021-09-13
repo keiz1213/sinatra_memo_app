@@ -29,8 +29,8 @@ $ gem install bundler
 ```bash
 $ git clone https://github.com/keiz1213/sinatra_memo_app.git
 $ cd sinatra_memo_app
-$ git fetch origin pull/1/head:submit_an_assignment
-$ git checkout submit_an_assignment
+$ git fetch origin pull/2/head:database
+$ git checkout database
 $ bundle install --path vendor/bundle
 $ bundle exec ruby app.rb
 ```
