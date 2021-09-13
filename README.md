@@ -11,8 +11,15 @@
 * Ruby 3.0.0
 * puma 5.4.0
 * sinatra 2.2.0
+* PostgreSQL 13.3
 
 # Installation
+## PostgreSQL
+
+```
+$ brew install postgresql
+$ pg_ctl -D /usr/local/var/postgres start
+```
 ## bundler
 ```bash
 $ gem install bundler
