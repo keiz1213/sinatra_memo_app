@@ -3,37 +3,36 @@
 require 'sinatra'
 require 'sinatra/reloader'
 require 'erb'
-require 'json'
 require 'cgi/escape'
+require 'pg'
 
-def find_memo(id)
-  memos = File.open('db/memos.json') { |file| JSON.parse(file.read) }
+db_connection = PG.connect(dbname: 'postgres')
+db_connection.exec('CREATE TABLE IF NOT EXISTS mymemos (id serial, title text,content text)')
+
+def find_memo(id, connection)
+  memos = connection.exec('SELECT * FROM mymemos')
   memos.find { |m| m['id'] == id }
 end
 
-def delete_memo(id)
-  memos = File.open('db/memos.json') { |file| JSON.parse(file.read) }
-  memos.each_with_index do |memo, index|
-    memos.delete_at(index) if memo['id'] == id
-  end
-  File.open('db/memos.json', 'w') { |file| file.puts(JSON.generate(memos)) }
+def post_memo(params, connection)
+  title = params['title']
+  content = params['content']
+  connection.exec('INSERT INTO mymemos (title,content) values($1,$2)', [title, content])
 end
 
-def edit_memo(id)
-  memos = File.open('db/memos.json') { |file| JSON.parse(file.read) }
-  memo = memos.find { |m| m['id'] == id }
-  memo['title'] = params['title']
-  memo['content'] = params['content']
-  File.open('db/memos.json', 'w') { |file| file.puts(JSON.generate(memos)) }
+def delete_memo(id, connection)
+  connection.exec("DELETE from mymemos where id = #{id}")
 end
 
-File.open('db/memos.json', 'r+') do |file|
-  file.puts('[]') if file.size.zero?
+def edit_memo(id, connection)
+  title = params['title']
+  content = params['content']
+  connection.exec('UPDATE mymemos set title = $1,content =$2 where id = $3', [title, content, id])
 end
 
 get '/' do
   @title = 'My Memo'
-  @memos = File.open('db/memos.json') { |file| JSON.parse(file.read) }
+  @memos = db_connection.exec('SELECT * FROM mymemos')
   erb :home
 end
 
@@ -43,24 +42,13 @@ get '/memos/new' do
 end
 
 post '/memos/new' do
-  File.open('db/memos.json', 'r+') do |file|
-    memos = JSON.parse(file.read)
-    params['id'] = if memos == []
-                     1
-                   else
-                     memos.map { |memo| memo['id'] }.max + 1
-                   end
-    memos << params
-    File.open('db/memos.json', 'w') do |f|
-      f.puts(JSON.generate(memos))
-    end
-  end
+  post_memo(params, db_connection)
   redirect to('/')
 end
 
 get '/memos/:id' do |id|
-  @id = id.to_i
-  memo = find_memo(@id)
+  @id = id
+  memo = find_memo(@id, db_connection)
   @memo_title = (memo['title'])
   @memo_content = (memo['content'])
   @title = @memo_title
@@ -68,15 +56,14 @@ get '/memos/:id' do |id|
 end
 
 delete '/memos/:id' do |id|
-  @id = id.to_i
-  delete_memo(@id)
-  @title = @memo_title
+  @id = id
+  delete_memo(@id, db_connection)
   redirect to '/'
 end
 
 get '/memos/:id/edit' do |id|
-  @id = id.to_i
-  memo = find_memo(@id)
+  @id = id
+  memo = find_memo(@id, db_connection)
   @memo_title = (memo['title'])
   @memo_content = (memo['content'])
   @title = @memo_title
@@ -84,7 +71,7 @@ get '/memos/:id/edit' do |id|
 end
 
 patch '/memos/:id' do |id|
-  @id = id.to_i
-  edit_memo(@id)
+  @id = id
+  edit_memo(@id, db_connection)
   redirect to('/')
 end
